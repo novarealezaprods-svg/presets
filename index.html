@@ -209,6 +209,15 @@ src="https://www.facebook.com/tr?id=26298801999791757&ev=PageView&noscript=1"
   .demo-progress-fill{height:100%;width:0%;background:var(--coroa);}
   .demo-caption{margin-top:1rem;font-size:0.85rem;color:var(--bone-dim);position:relative;z-index:1;}
 
+  .hero-offer{margin-top:2rem;display:flex;flex-direction:column;align-items:center;text-align:center;}
+  .hero-offer-img{width:100%;max-width:420px;height:auto;display:block;}
+  .hero-offer-old{font-family:var(--font-mono);font-size:0.8rem;color:var(--prata);letter-spacing:0.04em;margin-top:1.25rem;}
+  .hero-offer-old s{text-decoration:line-through;}
+  .hero-offer-label{font-family:var(--font-mono);font-size:0.7rem;text-transform:uppercase;color:var(--bone-dim);letter-spacing:0.15em;margin-top:0.4rem;}
+  .hero-offer-price{font-family:var(--font-display);font-weight:700;font-size:clamp(2.6rem,7vw,3.6rem);color:var(--coroa);text-shadow:0 0 24px rgba(232,184,75,0.45);line-height:1.1;}
+  .hero-offer .btn{width:100%;max-width:320px;margin-top:1.25rem;}
+  .hero-offer-seals{font-family:var(--font-mono);font-size:0.72rem;color:var(--bone-dim);text-transform:uppercase;letter-spacing:0.06em;margin-top:0.85rem;}
+
   /* PROBLEM */
   .problem-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;margin-top:2.5rem;}
   @media (max-width:860px){.problem-grid{grid-template-columns:1fr;}}
@@ -352,6 +361,14 @@ src="https://www.facebook.com/tr?id=26298801999791757&ev=PageView&noscript=1"
         <p class="demo-caption" id="demoCaption">Gravação crua, direto do microfone do celular.</p>
         <audio id="audioAntes" src="audio/voz-crua.mp3" preload="auto"></audio>
         <audio id="audioDepois" src="audio/voz-real.mp3" preload="auto"></audio>
+      </div>
+      <div class="hero-offer">
+        <img class="hero-offer-img" src="img/mockup-voz-real.webp" alt="Pack Voz Real — 28 presets de mixagem vocal para BandLab" loading="eager" width="480">
+        <span class="hero-offer-old">DE <s>R$97,00</s></span>
+        <span class="hero-offer-label">Por apenas</span>
+        <span class="hero-offer-price">R$27,90</span>
+        <a href="https://app.kawaipay.com/checkout/10161" class="btn btn-primary btn-lg" id="heroCheckoutBtn">Quero Minha Voz Real</a>
+        <span class="hero-offer-seals">🔒 Compra segura · Acesso imediato · Garantia de 7 dias</span>
       </div>
     </div>
   </div>
@@ -696,15 +713,17 @@ src="https://www.facebook.com/tr?id=26298801999791757&ev=PageView&noscript=1"
     });
   });
 
-  // Meta Pixel — InitiateCheckout no clique do botão de compra real
-  var checkoutBtn = document.getElementById('checkoutBtn');
-  if(checkoutBtn){
-    checkoutBtn.addEventListener('click', function(){
-      if(typeof fbq === 'function'){
-        fbq('track', 'InitiateCheckout', {value: 27.90, currency: 'BRL', content_name: 'Voz Real - Presets BandLab'});
-      }
-    });
-  }
+  // Meta Pixel — InitiateCheckout no clique dos botões de compra real
+  ['checkoutBtn', 'heroCheckoutBtn'].forEach(function(id){
+    var btn = document.getElementById(id);
+    if(btn){
+      btn.addEventListener('click', function(){
+        if(typeof fbq === 'function'){
+          fbq('track', 'InitiateCheckout', {value: 27.90, currency: 'BRL', content_name: 'Voz Real - Presets BandLab'});
+        }
+      });
+    }
+  });
 
   // Mobile sticky CTA
   var mobileCta = document.getElementById('mobileCta');
