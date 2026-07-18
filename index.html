@@ -207,8 +207,6 @@ src="https://www.facebook.com/tr?id=26298801999791757&ev=PageView&noscript=1"
   @keyframes barPulse{0%,100%{transform:scaleY(1);}50%{transform:scaleY(1.12);}}
   .demo-progress{height:3px;background:rgba(255,255,255,0.08);border-radius:2px;margin-top:1.25rem;overflow:hidden;position:relative;z-index:1;}
   .demo-progress-fill{height:100%;width:0%;background:var(--coroa);}
-  .demo-progress-fill.animate{animation:progressRun 3.6s linear forwards;}
-  @keyframes progressRun{from{width:0%;}to{width:100%;}}
   .demo-caption{margin-top:1rem;font-size:0.85rem;color:var(--bone-dim);position:relative;z-index:1;}
 
   /* PROBLEM */
@@ -352,6 +350,8 @@ src="https://www.facebook.com/tr?id=26298801999791757&ev=PageView&noscript=1"
         </div>
         <div class="demo-progress"><div class="demo-progress-fill" id="progressFill"></div></div>
         <p class="demo-caption" id="demoCaption">Gravação crua, direto do microfone do celular.</p>
+        <audio id="audioAntes" src="audio/voz-crua.mp3" preload="auto"></audio>
+        <audio id="audioDepois" src="audio/voz-real.mp3" preload="auto"></audio>
       </div>
     </div>
   </div>
@@ -593,35 +593,100 @@ src="https://www.facebook.com/tr?id=26298801999791757&ev=PageView&noscript=1"
   }
   render('antes');
 
+  var audioAntes = document.getElementById('audioAntes');
+  var audioDepois = document.getElementById('audioDepois');
+  var activeState = 'antes';
+  var playing = false;
+  var rafId = null;
+
+  function activeAudio(){ return activeState === 'depois' ? audioDepois : audioAntes; }
+  function inactiveAudio(){ return activeState === 'depois' ? audioAntes : audioDepois; }
+
+  function applyVolumes(){
+    activeAudio().volume = 1;
+    inactiveAudio().volume = 0;
+  }
+
+  function setBarsPlaying(on){
+    document.querySelectorAll('.bar').forEach(function(b){b.classList.toggle('is-playing', on);});
+  }
+
+  function updateProgress(){
+    var a = activeAudio();
+    var dur = a.duration || 12;
+    progressFill.style.width = (dur ? (a.currentTime/dur)*100 : 0) + '%';
+  }
+
+  function tick(){
+    if(!playing) return;
+    var a = activeAudio(), b = inactiveAudio();
+    if(Math.abs(a.currentTime - b.currentTime) > 0.1){
+      b.currentTime = a.currentTime;
+    }
+    updateProgress();
+    rafId = requestAnimationFrame(tick);
+  }
+
+  function stopPlayback(resetTime){
+    playing = false;
+    if(rafId) cancelAnimationFrame(rafId);
+    rafId = null;
+    audioAntes.pause();
+    audioDepois.pause();
+    if(resetTime){
+      audioAntes.currentTime = 0;
+      audioDepois.currentTime = 0;
+      progressFill.style.width = '0%';
+    }
+    setBarsPlaying(false);
+    playBtn.style.opacity = '1';
+  }
+
+  [audioAntes, audioDepois].forEach(function(audio){
+    audio.addEventListener('ended', function(){
+      if(!playing) return;
+      stopPlayback(true);
+    });
+  });
+
   toggleBtns.forEach(function(btn){
     btn.addEventListener('click', function(){
       toggleBtns.forEach(function(b){b.classList.remove('is-active');b.setAttribute('aria-selected','false');});
       btn.classList.add('is-active');
       btn.setAttribute('aria-selected','true');
       var state = btn.dataset.state;
+      activeState = state;
       demoCard.classList.toggle('state-depois', state==='depois');
       render(state);
+      if(playing) setBarsPlaying(true);
+      applyVolumes();
       caption.textContent = state === 'depois'
         ? 'Mesmo trecho, com o preset Voz Real aplicado.'
         : 'Gravação crua, direto do microfone do celular.';
     });
   });
 
-  var playing = false;
   playBtn.addEventListener('click', function(){
-    if(playing) return;
-    playing = true;
-    document.querySelectorAll('.bar').forEach(function(b){b.classList.add('is-playing');});
-    progressFill.classList.remove('animate');
-    void progressFill.offsetWidth;
-    progressFill.classList.add('animate');
-    playBtn.style.opacity='0.5';
-    setTimeout(function(){
-      document.querySelectorAll('.bar').forEach(function(b){b.classList.remove('is-playing');});
-      progressFill.classList.remove('animate');
-      playBtn.style.opacity='1';
-      playing = false;
-    }, 3600);
+    if(playing){
+      stopPlayback(false);
+      return;
+    }
+
+    applyVolumes();
+    var p1 = audioAntes.play();
+    var p2 = audioDepois.play();
+    Promise.all([p1, p2].map(function(p){
+      return (p && p.catch) ? p.catch(function(){}) : Promise.resolve();
+    })).then(function(){
+      if(audioAntes.paused && audioDepois.paused){
+        stopPlayback(false);
+        return;
+      }
+      playing = true;
+      setBarsPlaying(true);
+      playBtn.style.opacity = '0.5';
+      rafId = requestAnimationFrame(tick);
+    });
   });
 
   // FAQ accordion
